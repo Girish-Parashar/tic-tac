@@ -55,20 +55,36 @@
     <div class="container">
         <h1>Tic Tac Toe</h1>
         <div class="controls">
-            <label for="level">Select difficulty:</label>
-            <select id="level">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+            <label for="gameMode">Select game mode:</label>
+            <select id="gameMode" onchange="togglePlayerInputs()">
+                <option value="computer" selected>Play with Computer</option>
+                <option value="twoPlayer">Two Player</option>
             </select>
-            
-            <label for="symbol">Select your symbol:</label>
-            <button onclick="setSymbol('X')">X</button>
-            <button onclick="setSymbol('O')">O</button>
  
-            <button onclick="resetGame()">Restart</button>
+            <div id="difficultySelection">
+                <label for="difficulty">Select difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <div id="symbolSelection">
+                    <label for="symbol">Select your symbol:</label>
+                    <button onclick="setSymbol('X')">X</button>
+                    <button onclick="setSymbol('O')">O</button>
+                </div>
+                <button onclick="resetGame()">Restart</button>
+            </div>
+ 
+            <div id="playerNames" style="display:none;">
+                <input type="text" id="player1Name" placeholder="Player 1 Name" />
+                <input type="text" id="player2Name" placeholder="Player 2 Name" />
+                <button onclick="startGame()">Start Game</button>
+                <button onclick="resetGame()">Restart</button>
+            </div>
+ 
         </div>
-        
+ 
         <div class="grid">
             <div class="cell" onclick="playerMove(this, 0)"></div>
             <div class="cell" onclick="playerMove(this, 1)"></div>
@@ -86,53 +102,191 @@
  
     <script>
         let board = Array(9).fill(null);
-        let currentPlayer = 'X';
-        let difficulty = 'easy';
+        let playerSymbol = 'X';
+        let computerSymbol = 'O';
+        let currentPlayer = playerSymbol;
+        let gameMode = 'computer';
+        let player1Name = 'Player 1';
+        let player2Name = 'Player 2';
  
-        document.getElementById('level').addEventListener('change', function() {
-            difficulty = this.value;
-        });
+        function togglePlayerInputs() {
+gameMode = document.getElementById('gameMode').value;
+if (gameMode === 'twoPlayer') {
+document.getElementById('playerNames').style.display = 'block';
+document.getElementById('difficultySelection').style.display = 'none';
+} else {
+document.getElementById('playerNames').style.display = 'none';
+document.getElementById('difficultySelection').style.display = 'block';
+}
+}
  
-        function setSymbol(symbol) {
-            currentPlayer = symbol;
-            document.querySelector('.symbol-select').style.display = 'none';
-        }
+function startGame() {
+player1Name = document.getElementById('player1Name').value || 'Player 1';
+player2Name = document.getElementById('player2Name').value || 'Player 2';
+document.querySelector('.message').innerText = `${player1Name}'s turn`;
+}
  
-        function playerMove(cell, index) {
-            if (!board[index]) {
-                board[index] = currentPlayer;
-                cell.innerText = currentPlayer;
-                if (checkWinner()) {
-                    document.querySelector('.message').innerText = currentPlayer + ' wins!';
-                    return;
-                } else if (board.every(cell => cell !== null)) {
-                    document.querySelector('.message').innerText = "It's a draw!";
-                    return;
-                }
-                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                document.querySelector('.message').innerText = "Current Player: " + currentPlayer;
-            }
-        }
+function setSymbol(symbol) {
+playerSymbol = symbol;
+computerSymbol = (symbol === 'X') ? 'O' : 'X';
+document.querySelector('.controls').style.display = 'none';
+document.querySelector('.message').innerText = "Your turn";
+}
  
-        function checkWinner() {
-            const winningCombinations = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
-            
-            return winningCombinations.some(combination => {
-                const [a, b, c] = combination;
-                return board[a] && board[a] === board[b] && board[a] === board[c];
-            });
-        }
+function playerMove(cell, index) {
+if (!board[index] && ((gameMode === 'computer' && currentPlayer === playerSymbol) || gameMode === 'twoPlayer')) {
+board[index] = currentPlayer;
+cell.innerText = currentPlayer;
  
-        function resetGame() {
-            board.fill(null);
-            document.querySelectorAll('.cell').forEach(cell => cell.innerText = '');
-            currentPlayer = 'X';
-            document.querySelector('.message').innerText = '';
-        }
-    </script>
-</body>
-</html>
+if (checkWinner(currentPlayer)) {
+document.querySelector('.message').innerText = `${currentPlayer === playerSymbol ? player1Name : player2Name} wins!`;
+return;
+} else if (board.every(cell => cell !== null)) {
+document.querySelector('.message').innerText = "It's a draw!";
+return;
+}
+ 
+if (gameMode === 'computer') {
+currentPlayer = computerSymbol;
+setTimeout(() => computerMove(), 500);
+document.querySelector('.message').innerText = "Computer's turn";
+} else {
+currentPlayer = currentPlayer === playerSymbol ? computerSymbol : playerSymbol;
+document.querySelector('.message').innerText = `${currentPlayer === playerSymbol ? player1Name : player2Name}'s turn`;
+}
+}
+}
+ 
+function computerMove() {
+const difficulty = document.getElementById('difficulty').value;
+let moveIndex;
+ 
+if (difficulty === 'easy') {
+moveIndex = randomMove();
+} else if (difficulty === 'medium') {
+moveIndex = strategicMove();
+} else if (difficulty === 'hard') {
+moveIndex = minimaxMove(board, computerSymbol);
+}
+ 
+if (moveIndex !== undefined && moveIndex !== null) {
+board[moveIndex] = computerSymbol;
+document.querySelectorAll('.cell')[moveIndex].innerText = computerSymbol;
+ 
+if (checkWinner(computerSymbol)) {
+document.querySelector('.message').innerText = "Computer wins!";
+return;
+} else if (board.every(cell => cell !== null)) {
+document.querySelector('.message').innerText = "It's a draw!";
+return;
+}
+ 
+currentPlayer = playerSymbol;
+document.querySelector('.message').innerText = "Your turn";
+}
+}
+ 
+function randomMove() {
+let emptyIndices = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+}
+ 
+function strategicMove() {
+for (let i in board) {
+if (board[i] === null) {
+board[i] = computerSymbol;
+if (checkWinner(computerSymbol)) {
+board[i] = null;
+return i;
+}
+board[i] = null;
+ 
+board[i] = playerSymbol;
+if (checkWinner(playerSymbol)) {
+board[i] = null;
+return i;
+}
+board[i] = null;
+}
+}
+return randomMove();
+}
+ 
+function minimaxMove(boardState, player) {
+function minimax(boardState, depth, isMaximizing) {
+if (checkWinner(computerSymbol)) return 1;
+if (checkWinner(playerSymbol)) return -1;
+if (!boardState.includes(null)) return 0;
+ 
+if (isMaximizing) {
+let bestScore = -Infinity;
+ 
+for (let i in boardState) {
+if (boardState[i] === null) {
+boardState[i] = computerSymbol;
+let score = minimax(boardState, depth + 1, false);
+boardState[i] = null;
+bestScore = Math.max(score, bestScore);
+}
+}
+return bestScore;
+ 
+} else {
+let bestScore = Infinity;
+ 
+for (let i in boardState) {
+if (boardState[i] === null) {
+boardState[i] = playerSymbol;
+let score= minimax(boardState , depth+1 , true );
+              boardState [i]= null ;
+              bestScore= Math.min(score , bestScore );
+              
+              }
+              }
+              return bestScore ;
+              
+              }
+              }
+ 
+              let bestScore= -Infinity ;
+              let move ;
+ 
+              for(let i in boardState ){ if(boardState [i]=== null ){ boardState [i]= player ;
+ 
+              let score= minimax(boardState ,0 , false );
+              boardState [i]= null ;
+ 
+              if(score > bestScore ){ bestScore= score ;
+                  move= i ;
+                  
+                  } } }
+ 
+                  return move ? parseInt(move ): randomMove();
+                  
+                  }
+ 
+                  function checkWinner(player){ const winningCombinations=[
+                      [0 ,1 ,2 ],[3 ,4 ,5 ],[6 ,7 ,8 ],
+                      [0 ,3 ,6 ],[1 ,4 ,7 ],[2 ,5 ,8 ],
+                      [0 ,4 ,8 ],[2 ,4 ,6 ]
+                      
+                      ];
+ 
+                      return winningCombinations.some(combination => combination.every(index => board[index ]=== player ));
+                      
+                      }
+ 
+                      function resetGame(){ board.fill(null );
+                          document.querySelectorAll('.cell ').forEach(cell => cell.innerText= '' );
+                          
+                          currentPlayer= playerSymbol ;
+                          document.querySelector('.controls ').style.display= 'block' ;
+                          document.querySelector('.message ').innerText= '' ;
+                          
+                          if(gameMode=== 'twoPlayer'){ startGame(); }else{ togglePlayerInputs(); }
+                          
+                          
+                          }
+                          </script>  
+                          </body>  
+                          </html>  
